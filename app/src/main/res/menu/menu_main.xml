@@ -1,0 +1,34 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.zebra.rfid.demo.sdksample.MainActivity">
+    <item
+        android:id="@+id/action_settings"
+        android:orderInCategory="100"
+        android:title="@string/action_settings"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_start"
+        android:orderInCategory="100"
+        android:title="@string/action_start"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_stop"
+        android:orderInCategory="100"
+        android:title="@string/action_stop"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_access"
+        android:orderInCategory="100"
+        android:title="@string/action_access"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_restore_public_access"
+        android:orderInCategory="100"
+        android:title="@string/action_restore_public_access"
+        app:showAsAction="never" />
+</menu>

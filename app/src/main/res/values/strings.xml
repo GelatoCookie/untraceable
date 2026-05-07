@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">SDKSample</string>
+    <string name="action_settings">Settings</string>
+    <string name="action_start">"Start Untraceable "</string>
+    <string name="action_stop">Stop</string>
+    <string name="action_access">Untraceable: hide EPC Test</string>
+    <string name="action_restore_public_access">Restore Public Access</string>
+</resources>
