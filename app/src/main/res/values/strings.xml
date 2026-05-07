@@ -5,4 +5,5 @@
     <string name="action_stop">Stop</string>
     <string name="action_access">Untraceable: hide EPC Test</string>
     <string name="action_restore_public_access">Restore Public Access</string>
+    <string name="action_clesr">Clear UI</string>
 </resources>

@@ -6,24 +6,32 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
 import android.widget.TextView;
 
-import com.zebra.rfid.api3.InvalidUsageException;
-import com.zebra.rfid.api3.OperationFailureException;
 import com.zebra.rfid.api3.TagData;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 
 public class MainActivity extends AppCompatActivity implements RFIDHandler.ResponseHandlerInterface {
 
     public TextView statusTextViewRFID = null;
-    private TextView textrfid;
     private TextView testStatus;
+    private TextView tvTagCount;
+    private ListView listViewTags;
+    private TagAdapter tagAdapter;
+    private final LinkedHashMap<String, TagEntry> tagMap = new LinkedHashMap<>();
 
     RFIDHandler rfidHandler;
     final static String TAG = "RFID_SAMPLE";
@@ -45,95 +53,57 @@ public class MainActivity extends AppCompatActivity implements RFIDHandler.Respo
             }
         }
 
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        // UI
         statusTextViewRFID = findViewById(R.id.textStatus);
-        textrfid = findViewById(R.id.textViewdata);
-        testStatus = findViewById(R.id.testStatus);
+        testStatus         = findViewById(R.id.testStatus);
+        tvTagCount         = findViewById(R.id.tvTagCount);
+        listViewTags       = findViewById(R.id.listViewTags);
 
-        // RFID Handler
+        tagAdapter = new TagAdapter(this, new ArrayList<>());
+        listViewTags.setAdapter(tagAdapter);
+
         rfidHandler = new RFIDHandler();
         rfidHandler.onCreate(this);
 
-        // set up button click listener
-        Button test = findViewById(R.id.button);
-        test.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String result = rfidHandler.Test1();
-                testStatus.setText(result);
-            }
-        });
-
-        Button test2 = findViewById(R.id.button2);
-        test2.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String result = rfidHandler.Test2();
-                testStatus.setText(result);
-            }
-        });
-
-        Button defaultButton = findViewById(R.id.button3);
-        defaultButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String result = rfidHandler.Defaults();
-                testStatus.setText(result);
-            }
-        });
+        findViewById(R.id.button).setOnClickListener(v  -> testStatus.setText(rfidHandler.Test1()));
+        findViewById(R.id.button2).setOnClickListener(v -> testStatus.setText(rfidHandler.Test2()));
+        findViewById(R.id.button3).setOnClickListener(v -> testStatus.setText(rfidHandler.Defaults()));
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
+        if (id == R.id.action_settings) return true;
 
         if (id == R.id.action_start) {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    textrfid.setText("");
-                }
-            });
-
-
+            clearTagList();
             rfidHandler.performUntraceable();
         }
+        if (id == R.id.action_stop)                  rfidHandler.stopInventory();
+        if (id == R.id.action_access)                rfidHandler.performUntraceableHideEPCTest();
+        if (id == R.id.action_restore_public_access) rfidHandler.restorePublicAccess();
+        if (id == R.id.action_clesr)                 clearTagList();
 
 
-
-        if (id == R.id.action_stop){
-            rfidHandler.stopInventory();
-
-        }
-
-
-        if (id == R.id.action_access){
-            //rfidHandler.performAccessTID();
-            rfidHandler.performUntraceableHideEPCTest();
-        }
-
-        if (id == R.id.action_restore_public_access) {
-            rfidHandler.restorePublicAccess();
-        }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void clearTagList() {
+        runOnUiThread(() -> {
+            tagMap.clear();
+            tagAdapter.clear();
+            tagAdapter.notifyDataSetChanged();
+            tvTagCount.setText("Tags: 0");
+        });
     }
 
     @Override
@@ -145,8 +115,7 @@ public class MainActivity extends AppCompatActivity implements RFIDHandler.Respo
     @Override
     protected void onPostResume() {
         super.onPostResume();
-        String status = rfidHandler.onResume();
-        statusTextViewRFID.setText(status);
+        statusTextViewRFID.setText(rfidHandler.onResume());
     }
 
     @Override
@@ -155,32 +124,75 @@ public class MainActivity extends AppCompatActivity implements RFIDHandler.Respo
         rfidHandler.onDestroy();
     }
 
+    // ── RFIDHandler callbacks ─────────────────────────────────────────────────
 
     @Override
     public void handleTagdata(TagData[] tagData) {
-        final StringBuilder sb = new StringBuilder();
-        for (int index = 0; index < tagData.length; index++) {
-            sb.append(tagData[index].getTagID() + "\n");
-        }
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                textrfid.append(sb.toString());
+        for (TagData td : tagData) {
+            String id = td.getTagID();
+            TagEntry existing = tagMap.get(id);
+            if (existing != null) {
+                existing.readCount++;
+                existing.peakRSSI = td.getPeakRSSI();
+            } else {
+                tagMap.put(id, new TagEntry(id, td.getPeakRSSI(), 1));
             }
+        }
+        runOnUiThread(() -> {
+            tagAdapter.clear();
+            tagAdapter.addAll(tagMap.values());
+            tagAdapter.notifyDataSetChanged();
+            tvTagCount.setText("Tags: " + tagMap.size());
         });
     }
 
     @Override
     public void handleTriggerPress(boolean pressed) {
         if (pressed) {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    textrfid.setText("");
-                }
-            });
+            clearTagList();
             rfidHandler.performInventory();
-        } else
+        } else {
             rfidHandler.stopInventory();
+        }
+    }
+
+    // ── Tag List Adapter ──────────────────────────────────────────────────────
+
+    private static class TagAdapter extends ArrayAdapter<TagEntry> {
+
+        private final LayoutInflater inflater;
+
+        TagAdapter(Context context, ArrayList<TagEntry> items) {
+            super(context, R.layout.item_tag, items);
+            inflater = LayoutInflater.from(context);
+        }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            ViewHolder holder;
+            if (convertView == null) {
+                convertView = inflater.inflate(R.layout.item_tag, parent, false);
+                holder = new ViewHolder();
+                holder.tvTagId = convertView.findViewById(R.id.tvTagId);
+                holder.tvRssi  = convertView.findViewById(R.id.tvRssi);
+                holder.tvCount = convertView.findViewById(R.id.tvCount);
+                convertView.setTag(holder);
+            } else {
+                holder = (ViewHolder) convertView.getTag();
+            }
+
+            TagEntry entry = getItem(position);
+            if (entry != null) {
+                holder.tvTagId.setText(entry.tagId);
+                holder.tvRssi.setText(entry.peakRSSI + " dBm");
+                holder.tvCount.setText("×" + entry.readCount);
+            }
+            return convertView;
+        }
+
+        static class ViewHolder {
+            TextView tvTagId, tvRssi, tvCount;
+        }
     }
 }
+

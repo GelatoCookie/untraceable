@@ -15,12 +15,6 @@
         app:showAsAction="never" />
 
     <item
-        android:id="@+id/action_stop"
-        android:orderInCategory="100"
-        android:title="@string/action_stop"
-        app:showAsAction="never" />
-
-    <item
         android:id="@+id/action_access"
         android:orderInCategory="100"
         android:title="@string/action_access"
@@ -31,4 +25,17 @@
         android:orderInCategory="100"
         android:title="@string/action_restore_public_access"
         app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_stop"
+        android:orderInCategory="100"
+        android:title="@string/action_stop"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_clesr"
+        android:orderInCategory="100"
+        android:title="@string/action_clesr"
+        app:showAsAction="never" />
 </menu>
+
