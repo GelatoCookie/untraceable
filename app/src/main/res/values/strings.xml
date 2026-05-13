@@ -1,9 +1,9 @@
 <resources>
-    <string name="app_name">SDKSample</string>
+    <string name="app_name">Untraceable pw=1, epc=33333333</string>
     <string name="action_settings">Settings</string>
-    <string name="action_start">"Start Untraceable "</string>
+    <string name="action_start">"Untraceable hide TID, show 2w-EPC"</string>
     <string name="action_stop">Stop</string>
-    <string name="action_access">Untraceable: hide EPC Test</string>
-    <string name="action_restore_public_access">Restore Public Access</string>
+    <string name="action_access">Read TID and EPC Test</string>
+    <string name="action_restore_public_access">Restore Public Access for TID and EPC</string>
     <string name="action_clesr">Clear UI</string>
 </resources>

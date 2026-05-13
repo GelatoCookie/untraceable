@@ -17,16 +17,33 @@
         android:background="@color/colorAccent"
         android:layout_marginEnd="12dp" />
 
-    <!-- Tag ID (monospace, fills remaining width) -->
-    <TextView
-        android:id="@+id/tvTagId"
+    <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:fontFamily="monospace"
-        android:textSize="13sp"
-        android:textColor="#212121"
-        android:text="E2800000000000000000000" />
+        android:orientation="vertical">
+
+        <!-- Top row: Tag ID -->
+        <TextView
+            android:id="@+id/tvTagId"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="monospace"
+            android:textSize="13sp"
+            android:textColor="#212121"
+            android:text="E2800000000000000000000" />
+
+        <!-- Memory bank row -->
+        <TextView
+            android:id="@+id/tvMemoryInfo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="11sp"
+            android:textColor="#757575"
+            android:visibility="gone"
+            android:text="Bank: TID | Data: 1234..." />
+
+    </LinearLayout>
 
     <!-- RSSI badge -->
     <TextView

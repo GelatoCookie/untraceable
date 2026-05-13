@@ -506,7 +506,7 @@ class RFIDHandler implements Readers.RFIDReaderEventHandler {
                     //////////////////////////////////////////////////////////////
                     // untraceable
                     {
-                        if (myTags[index].getG2v2OpStatus() == null) {
+                        if (myTags[index].getG2v2Response() != null) {
                             Log.d(TAG, "5. Untraceable OK: EPC=" + myTags[index].getTagID() +
                                     " ,G2V2 response= " + myTags[index].getG2v2Response() +
                                     " ,op=" + myTags[index].getG2v2OpCode() +
