@@ -1,5 +1,15 @@
 # G2V2 Untraceable Feature — Ucode 9xe Tag
 
+## Release
+
+Current release: **v1.0.1**
+
+### v1.0.1 Highlights
+- Build workflow stabilized for Java 25 + Gradle 8.13 environments
+- `build-and-run.sh` now uses `assembleDebug` for reliable debug builds
+- `RFIDHandler.java` multi-catch syntax fixed to resolve Java compile errors
+- Documentation refreshed and synchronized across project markdown files
+
 ## Test Status: ✅ PASSED
 
 This project demonstrates successful implementation and testing of the **Untraceable** command (Gen2v2 ISO 18000-63) on **Ucode 9xe tags**.
@@ -87,4 +97,5 @@ Password: 0x00000001
 ---
 
 ## Version
-**v1.0.0** — Initial release with Ucode 9xe tag support
+- **v1.0.1** — Build stability fixes, script updates, and documentation refresh
+- **v1.0.0** — Initial release with Ucode 9xe tag support

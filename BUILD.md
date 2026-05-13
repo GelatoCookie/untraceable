@@ -1,5 +1,14 @@
 # Build & Run Automation
 
+## Release
+
+Current release: **v1.0.1**
+
+### v1.0.1 Updates
+- Updated debug build flow to use `assembleDebug`
+- Improved compatibility with Java 25 + Gradle 8.13
+- Included build-fix guidance used by the current scripts
+
 Automated scripts to clean, build, and run the G2V2 RFID application on macOS/Linux or Windows.
 
 ## Quick Start
@@ -184,7 +193,7 @@ chmod +x gradlew
 ./gradlew clean
 
 # Rebuild with verbose output
-./gradlew build --info
+./gradlew assembleDebug --info
 ```
 
 ### App Won't Launch

@@ -2,6 +2,14 @@
 
 ## History
 
+### v1.0.1 (Current)
+- ✅ Fixed build workflow compatibility for Java 25 + Gradle 8.13
+- ✅ Updated `build-and-run.sh` to use `assembleDebug` for stable debug builds
+- ✅ Fixed Java multi-catch compile issue in `RFIDHandler.java`
+- ✅ Updated all markdown docs for release consistency
+
+### v1.0.0
+
 ### v1.0.0 (Current)
 - ✅ Implemented `performUntraceable()` for Ucode 9xe tags
   - Hide 2 words of EPC (from 6 words)
@@ -92,14 +100,14 @@ Key Subdirectories:
 ```
 Repository: [To be configured]
 Branch: main
-Tag: v1.0.0
+Tag: v1.0.1
 ```
 
 **Note**: Configure remote after initial setup:
 ```bash
 git remote add origin <repository-url>
 git push -u origin main
-git push origin v1.0.0
+git push origin v1.0.1
 ```
 
 ---
