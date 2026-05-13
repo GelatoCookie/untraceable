@@ -342,7 +342,7 @@ class RFIDHandler implements Readers.RFIDReaderEventHandler {
                 reader.disconnect();
                 context.runOnUiThread(() -> textView.setText("Disconnected"));
             }
-        } catch (InvalidUsageException | OperationFailureException | Exception e) {
+        } catch (InvalidUsageException | OperationFailureException e) {
             e.printStackTrace();
         }
     }

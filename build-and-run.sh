@@ -64,7 +64,7 @@ clean_build() {
 # Build debug
 build_debug() {
     log_info "Building debug APK..."
-    "$GRADLE_WRAPPER" build --info
+    "$GRADLE_WRAPPER" assembleDebug --info
     log_success "Debug build completed"
 }
 
