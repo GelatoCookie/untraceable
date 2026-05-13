@@ -129,6 +129,48 @@ git push origin v1.0.0
 
 ---
 
+## Build & Run Automation Scripts (v1.0.0+)
+
+✅ **build-and-run.sh** (macOS/Linux)
+- Automated clean, build, and run workflow
+- Supports commands: clean, build, run, all, test, release, help
+- Colored output for easy readability
+- Comprehensive error handling and exit codes
+- Debug and release build support
+- Device/emulator detection and automatic app launching
+- Made executable: chmod +x build-and-run.sh
+
+✅ **build-and-run.bat** (Windows)
+- Windows batch equivalent of shell script
+- Identical commands and functionality
+- Error handling with errorlevel checks
+- Device deployment via ADB
+- Colored console output
+
+✅ **BUILD.md** (Comprehensive Documentation)
+- Full usage guide with examples for all platforms
+- Prerequisites and environment setup instructions
+- Troubleshooting section
+- CI/CD integration examples (GitHub Actions, GitLab CI)
+- Build artifact locations and signing configuration
+
+**Quick Commands:**
+```bash
+# macOS/Linux
+./build-and-run.sh all      # Clean, build, and run
+./build-and-run.sh clean    # Clean only
+./build-and-run.sh build    # Build only
+./build-and-run.sh release  # Build release APK
+./build-and-run.sh test     # Run tests
+
+# Windows
+build-and-run.bat all       # Clean, build, and run
+build-and-run.bat build     # Build only
+build-and-run.bat release   # Build release APK
+```
+
+---
+
 ## Code Cleanup (v1.0.0)
 
 ✅ **RFIDHandler.java**
