@@ -83,8 +83,25 @@ run_tests() {
     log_success "Tests completed"
 }
 
+# Returns success if at least one Android device/emulator is connected.
+has_connected_device() {
+    if ! command -v adb >/dev/null 2>&1; then
+        return 1
+    fi
+
+    local connected_count
+    connected_count=$(adb devices | awk 'NR>1 && $2=="device" {count++} END {print count+0}')
+    [ "$connected_count" -gt 0 ]
+}
+
 # Install and run on device/emulator
 run_on_device() {
+    if ! has_connected_device; then
+        log_error "No connected Android device/emulator found."
+        log_info "Connect a device or start an emulator, then run: ./build-and-run.sh run"
+        return 1
+    fi
+
     log_info "Installing debug APK on device..."
     "$GRADLE_WRAPPER" installDebug
     log_success "Installation completed"
@@ -122,8 +139,13 @@ main() {
         all)
             clean_build
             build_debug
-            run_on_device
-            log_success "Clean, build, and run completed!"
+            if has_connected_device; then
+                run_on_device
+                log_success "Clean, build, and run completed!"
+            else
+                log_warning "No connected device detected. Skipping install/launch step."
+                log_success "Clean and build completed!"
+            fi
             ;;
         test)
             run_tests
