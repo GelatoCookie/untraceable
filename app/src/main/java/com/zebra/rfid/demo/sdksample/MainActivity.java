@@ -19,6 +19,8 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.zebra.rfid.api3.ACCESS_OPERATION_CODE;
+import com.zebra.rfid.api3.ACCESS_OPERATION_STATUS;
 import com.zebra.rfid.api3.TagData;
 
 import java.util.ArrayList;
@@ -57,9 +59,9 @@ public class MainActivity extends AppCompatActivity implements RFIDHandler.Respo
         setSupportActionBar(toolbar);
 
         statusTextViewRFID = findViewById(R.id.textStatus);
-        testStatus         = findViewById(R.id.testStatus);
-        tvTagCount         = findViewById(R.id.tvTagCount);
-        listViewTags       = findViewById(R.id.listViewTags);
+        testStatus = findViewById(R.id.testStatus);
+        tvTagCount = findViewById(R.id.tvTagCount);
+        listViewTags = findViewById(R.id.listViewTags);
 
         tagAdapter = new TagAdapter(this, new ArrayList<>());
         listViewTags.setAdapter(tagAdapter);
@@ -83,17 +85,12 @@ public class MainActivity extends AppCompatActivity implements RFIDHandler.Respo
         int id = item.getItemId();
 
         if (id == R.id.action_settings) return true;
-
-        if (id == R.id.action_start) {
-            clearTagList();
-            rfidHandler.performUntraceable();
-        }
-        if (id == R.id.action_stop)                  rfidHandler.stopInventory();
-        if (id == R.id.action_access)                rfidHandler.performUntraceableHideEPCTest();
+        clearTagList();
+        if (id == R.id.action_start) rfidHandler.performUntraceable();
+        if (id == R.id.action_stop) rfidHandler.stopInventory();
+        if (id == R.id.action_access) rfidHandler.performAccessTID();
         if (id == R.id.action_restore_public_access) rfidHandler.restorePublicAccess();
-        if (id == R.id.action_clesr)                 clearTagList();
-
-
+        if (id == R.id.action_clesr) clearTagList();
         return super.onOptionsItemSelected(item);
     }
 
@@ -135,7 +132,15 @@ public class MainActivity extends AppCompatActivity implements RFIDHandler.Respo
                 existing.readCount++;
                 existing.peakRSSI = td.getPeakRSSI();
             } else {
-                tagMap.put(id, new TagEntry(id, td.getPeakRSSI(), 1));
+                existing = new TagEntry(id, td.getPeakRSSI(), 1);
+                tagMap.put(id, existing);
+            }
+            if (td.getOpCode() == ACCESS_OPERATION_CODE.ACCESS_OPERATION_READ &&
+                    td.getOpStatus() == ACCESS_OPERATION_STATUS.ACCESS_SUCCESS) {
+                if (td.getMemoryBankData() != null && td.getMemoryBankData().length() > 0) {
+                    existing.memoryBank = td.getMemoryBank().toString();
+                    existing.memoryBankData = td.getMemoryBankData();
+                }
             }
         }
         runOnUiThread(() -> {
@@ -174,6 +179,7 @@ public class MainActivity extends AppCompatActivity implements RFIDHandler.Respo
                 convertView = inflater.inflate(R.layout.item_tag, parent, false);
                 holder = new ViewHolder();
                 holder.tvTagId = convertView.findViewById(R.id.tvTagId);
+                holder.tvMemoryInfo = convertView.findViewById(R.id.tvMemoryInfo);
                 holder.tvRssi  = convertView.findViewById(R.id.tvRssi);
                 holder.tvCount = convertView.findViewById(R.id.tvCount);
                 convertView.setTag(holder);
@@ -186,12 +192,19 @@ public class MainActivity extends AppCompatActivity implements RFIDHandler.Respo
                 holder.tvTagId.setText(entry.tagId);
                 holder.tvRssi.setText(entry.peakRSSI + " dBm");
                 holder.tvCount.setText("×" + entry.readCount);
+
+                if (entry.memoryBankData != null) {
+                    holder.tvMemoryInfo.setVisibility(View.VISIBLE);
+                    holder.tvMemoryInfo.setText("Bank: " + entry.memoryBank + " | Data: " + entry.memoryBankData);
+                } else {
+                    holder.tvMemoryInfo.setVisibility(View.GONE);
+                }
             }
             return convertView;
         }
 
         static class ViewHolder {
-            TextView tvTagId, tvRssi, tvCount;
+            TextView tvTagId, tvMemoryInfo, tvRssi, tvCount;
         }
     }
 }

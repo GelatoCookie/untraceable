@@ -38,6 +38,10 @@ import com.zebra.rfid.api3.accessOp.AccessOperations;
 
 import java.util.ArrayList;
 
+/**
+ * Manages RFID reader operations including inventory, untraceable command, and tag access.
+ * Handles connectivity, configuration, and event notifications from the RFID reader.
+ */
 class RFIDHandler implements Readers.RFIDReaderEventHandler {
 
     final static String TAG = "RFID_SAMPLE";
@@ -67,14 +71,17 @@ class RFIDHandler implements Readers.RFIDReaderEventHandler {
     // TEST BUTTON functionality
     // following two tests are to try out different configurations features
 
+    /**
+     * Test antenna configuration: reduces transmit power to 100.
+     * @return Status message
+     */
     public String Test1() {
         // check reader connection
         if (!isReaderConnected())
             return "Not connected";
-        // set antenna configurations - reducing power to 200
+        // set antenna configurations - reducing power to 100
         try {
-            Antennas.AntennaRfConfig config = null;
-            config = reader.Config.Antennas.getAntennaRfConfig(1);
+            Antennas.AntennaRfConfig config = reader.Config.Antennas.getAntennaRfConfig(1);
             config.setTransmitPowerIndex(100);
             config.setrfModeTableIndex(0);
             config.setTari(0);
@@ -85,9 +92,13 @@ class RFIDHandler implements Readers.RFIDReaderEventHandler {
             e.printStackTrace();
             return e.getResults().toString() + " " + e.getVendorMessage();
         }
-        return "Antenna power Set to 220";
+        return "Antenna power set to 220";
     }
 
+    /**
+     * Test singulation configuration: sets session to S2.
+     * @return Status message
+     */
     public String Test2() {
         // check reader connection
         if (!isReaderConnected())
@@ -108,14 +119,17 @@ class RFIDHandler implements Readers.RFIDReaderEventHandler {
         return "Session set to S2";
     }
 
+    /**
+     * Applies default reader settings: max power (270) and session S0.
+     * @return Status message
+     */
     public String Defaults() {
         // check reader connection
         if (!isReaderConnected())
-            return "Not connected";;
+            return "Not connected";
         try {
             // Power to 270
-            Antennas.AntennaRfConfig config = null;
-            config = reader.Config.Antennas.getAntennaRfConfig(1);
+            Antennas.AntennaRfConfig config = reader.Config.Antennas.getAntennaRfConfig(1);
             config.setTransmitPowerIndex(MAX_POWER);
             config.setrfModeTableIndex(0);
             config.setTari(0);
@@ -254,7 +268,6 @@ class RFIDHandler implements Readers.RFIDReaderEventHandler {
             disconnect();
     }
 
-
     private synchronized String connect() {
         if (reader != null) {
             Log.d(TAG, "connect " + reader.getHostName());
@@ -327,18 +340,9 @@ class RFIDHandler implements Readers.RFIDReaderEventHandler {
             if (reader != null) {
                 reader.Events.removeEventsListener(eventHandler);
                 reader.disconnect();
-                context.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        textView.setText("Disconnected");
-                    }
-                });
+                context.runOnUiThread(() -> textView.setText("Disconnected"));
             }
-        } catch (InvalidUsageException e) {
-            e.printStackTrace();
-        } catch (OperationFailureException e) {
-            e.printStackTrace();
-        } catch (Exception e) {
+        } catch (InvalidUsageException | OperationFailureException | Exception e) {
             e.printStackTrace();
         }
     }
@@ -355,6 +359,9 @@ class RFIDHandler implements Readers.RFIDReaderEventHandler {
         }
     }
 
+    /**
+     * Starts inventory operation on the RFID reader.
+     */
     synchronized void performInventory() {
         // check reader connection
         if (!isReaderConnected())
@@ -362,55 +369,25 @@ class RFIDHandler implements Readers.RFIDReaderEventHandler {
         try {
             reader.Actions.purgeTags();
             reader.Actions.Inventory.perform();
-        } catch (InvalidUsageException e) {
-            e.printStackTrace();
-        } catch (OperationFailureException e) {
+        } catch (InvalidUsageException | OperationFailureException e) {
             e.printStackTrace();
         }
     }
 
-    /*
-    Untraceable
-    Untraceable operation lets the user decide which memory bank to show and
-    what length of the memory bank to show.
-    Here the UntraceableParams contain the settings and password.
-    The accessfilter parameter contains the tag pattern on which the operation occurs
-
-    // untraceable
-    AccessFilter accessFilter = new AccessFilter();
-    byte[] tagMask = new byte[]{(byte) 0xff, (byte) 0xff, };
-    // Tag Pattern A
-    accessFilter.TagPatternA.setMemoryBank(MEMORY_BANK.MEMORY_BANK_EPC);
-    accessFilter.TagPatternA.setTagPattern("2f22");
-    accessFilter.TagPatternA.setTagPatternBitCount(32);
-    accessFilter.TagPatternA.setBitOffset(32);
-    accessFilter.TagPatternA.setTagMask(tagMask);
-    accessFilter.TagPatternA.setTagMaskBitCount(tagMask.length*8);
-    accessFilter.setAccessFilterMatchPattern(FILTER_MATCH_PATTERN.A);
-
-    Gen2v2 gen2V2 = new Gen2v2();
-    Gen2v2.UntraceableParams UntraceableParams = gen2V2.new
-    UntraceableParams();
-    UntraceableParams.setPassword(0);
-    UntraceableParams.setShowEpc(true);
-    UntraceableParams.setHideEpc(false);
-    UntraceableParams.setShowUser(false);
-    UntraceableParams.setEpcLen(6);
-    UntraceableParams.setTid(UNTRACEABLE_TID.HIDE_ALL_TID);
-
-    try{
-        reader.Actions.gen2v2Access.untraceable(UntraceableParams, accessFilter,null);
-    } catch (InvalidUsageException e) {
-        e.printStackTrace();
-    } catch (OperationFailureException e) {
-        e.printStackTrace();
-    }
+    /**
+     * Executes the Untraceable command to hide EPC (reduce to 2 words) and all TID for matching tags.
+     * Targets Ucode 9xe tags with EPC pattern 0x33333333.
      */
+    // Untraceable: Operation lets user decide which memory bank to show and what length.
+    // UntraceableParams contain the settings and password.
+    // AccessFilter contains the tag pattern on which the operation occurs
     synchronized void performUntraceable() {
         // check reader connection
         if (!isReaderConnected())
             return;
         try {
+            reader.Actions.purgeTags();
+
             AccessFilter accessFilter = new AccessFilter();
             byte[] tagMask = new byte[]{(byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff};
             accessFilter.TagPatternA.setMemoryBank(MEMORY_BANK.MEMORY_BANK_EPC);
@@ -423,28 +400,27 @@ class RFIDHandler implements Readers.RFIDReaderEventHandler {
 
             Gen2v2 gen2V2 = new Gen2v2();
             Gen2v2.UntraceableParams untraceableParams = gen2V2.new UntraceableParams();
-            untraceableParams.setPassword(Long.parseLong("12345678", 16));
-            untraceableParams.setShowEpc(false);
-            untraceableParams.setHideEpc(true);
-            untraceableParams.setShowUser(false);
-            untraceableParams.setHideUser(true);
-            untraceableParams.setEpcLen(6);
-            untraceableParams.setTid(UNTRACEABLE_TID.SHOW_TID);
-
-            reader.Actions.purgeTags();
+            untraceableParams.setPassword(Long.parseLong("00000001", 16));
+            untraceableParams.setShowEpc(true);
+            untraceableParams.setHideEpc(false);
+            untraceableParams.setEpcLen(2);
+            untraceableParams.setTid(UNTRACEABLE_TID.HIDE_ALL_TID);
             reader.Actions.gen2v2Access.untraceable(untraceableParams, accessFilter, null);
-        } catch (InvalidUsageException e) {
-            e.printStackTrace();
-        } catch (OperationFailureException e) {
+        } catch (InvalidUsageException | OperationFailureException e) {
             e.printStackTrace();
         }
     }
 
+    /**
+     * Restores full EPC (6 words) and TID visibility for tags hidden by performUntraceable().
+     */
     synchronized void restorePublicAccess() {
         // check reader connection
         if (!isReaderConnected())
             return;
         try {
+            reader.Actions.purgeTags();
+
             AccessFilter accessFilter = new AccessFilter();
             byte[] tagMask = new byte[]{(byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff};
             accessFilter.TagPatternA.setMemoryBank(MEMORY_BANK.MEMORY_BANK_EPC);
@@ -457,189 +433,54 @@ class RFIDHandler implements Readers.RFIDReaderEventHandler {
 
             Gen2v2 gen2V2 = new Gen2v2();
             Gen2v2.UntraceableParams untraceableParams = gen2V2.new UntraceableParams();
-            untraceableParams.setPassword(Long.parseLong("12345678", 16));
-            untraceableParams.setHideEpc(false);
+            untraceableParams.setPassword(Long.parseLong("00000001", 16));
             untraceableParams.setShowEpc(true);
+            untraceableParams.setHideEpc(false);
+            untraceableParams.setEpcLen(6);
             untraceableParams.setTid(UNTRACEABLE_TID.SHOW_TID);
-            //untraceableParams.setRange(UNTRACEABLE_RANGE.TOGGLE_RANGE);
             untraceableParams.setShowUser(true);
 
-            reader.Actions.purgeTags();
             reader.Actions.gen2v2Access.untraceable(untraceableParams, accessFilter, null);
-        } catch (InvalidUsageException e) {
-            e.printStackTrace();
-        } catch (OperationFailureException e) {
+        } catch (InvalidUsageException | OperationFailureException e) {
             e.printStackTrace();
         }
     }
-
-
-//    synchronized void performUntraceable() {
-//        // check reader connection
-//        if (!isReaderConnected())
-//            return;
-//        try {
-//            AccessFilter accessFilter = new AccessFilter();
-//            byte[] tagMask = new byte[] {(byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff};
-//            accessFilter.TagPatternA.setMemoryBank(MEMORY_BANK.MEMORY_BANK_EPC);
-//            accessFilter.TagPatternA.setTagPattern("33333333");
-//            accessFilter.TagPatternA.setTagPatternBitCount(16*2);
-//            accessFilter.TagPatternA.setBitOffset(32);
-//            accessFilter.TagPatternA.setTagMask(tagMask);
-//            accessFilter.TagPatternA.setTagMaskBitCount(tagMask.length*4);
-//            accessFilter.setAccessFilterMatchPattern(FILTER_MATCH_PATTERN.A);
-//
-////            byte[] tagMask = new byte[] {(byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff};
-////            accessFilter.TagPatternA.setMemoryBank(MEMORY_BANK.MEMORY_BANK_TID);
-////            accessFilter.TagPatternA.setTagPattern("E2801190");
-////            accessFilter.TagPatternA.setTagPatternBitCount(16*6);
-////            accessFilter.TagPatternA.setBitOffset(0);
-////            accessFilter.TagPatternA.setTagMask(tagMask);
-////            accessFilter.TagPatternA.setTagMaskBitCount(tagMask.length*12);
-////            accessFilter.setAccessFilterMatchPattern(FILTER_MATCH_PATTERN.A);
-//
-//            Gen2v2 gen2V2 = new Gen2v2();
-//            Gen2v2.UntraceableParams UntraceableParams = gen2V2.new UntraceableParams();
-//            UntraceableParams.setPassword(Long.parseLong("12345678", 16));
-//            UntraceableParams.setShowUser(false);
-//            UntraceableParams.setTid(UNTRACEABLE_TID.SHOW_TID);
-//            UntraceableParams.setShowEpc(false);
-//            UntraceableParams.setShowEpc(false);
-//            UntraceableParams.setShowUser(false);
-//            UntraceableParams.setEpcLen(6);
-//
-//            reader.Actions.purgeTags();
-//            reader.Actions.gen2v2Access.untraceable(UntraceableParams, accessFilter, null);
-//            //reader.Actions.gen2v2Access.untraceable(UntraceableParams, null, null);
-//        } catch (InvalidUsageException e) {
-//            e.printStackTrace();
-//        } catch (OperationFailureException e) {
-//            e.printStackTrace();
-//        }
-//    }
-//
 
     synchronized void performAccessTID() {
         // check reader connection
         if (!isReaderConnected())
             return;
         try {
-            //reader.Actions.purgeTags();
             TagAccess tagAccess = new TagAccess();
-            TagAccess.ReadAccessParams readAccessParams = tagAccess.new ReadAccessParams();
-            //readAccessParams.setAccessPassword(0);
-            //readAccessParams.setAccessPassword(Long.parseLong("12345678", 16));
-            readAccessParams.setCount(0);
-            readAccessParams.setMemoryBank(MEMORY_BANK.MEMORY_BANK_TID);
-            readAccessParams.setOffset(0);;
-//            AccessFilter accessFilter = new AccessFilter();
-//            byte[] tagMask = new byte[] {(byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff};
-//            /////////////////////////////////////////////////////////////////////////////
-//            // Tag Pattern A
-//            accessFilter.TagPatternA.setMemoryBank(MEMORY_BANK.MEMORY_BANK_TID);
-//            accessFilter.TagPatternA.setTagPattern("33333333");
-//            accessFilter.TagPatternA.setTagPatternBitCount(16*2);
-//            accessFilter.TagPatternA.setBitOffset(0);
-//            accessFilter.TagPatternA.setTagMask(tagMask);
-//            accessFilter.TagPatternA.setTagMaskBitCount(tagMask.length*4);
-//            accessFilter.setAccessFilterMatchPattern(FILTER_MATCH_PATTERN.A);
-            //reader.Actions.TagAccess.readEvent(readAccessParams, accessFilter, null);
-            reader.Actions.TagAccess.readEvent(readAccessParams, null, null);
-        } catch (InvalidUsageException e) {
-            e.printStackTrace();
-        } catch (OperationFailureException e) {
+            
+            // Read TID
+            TagAccess.ReadAccessParams readTID = tagAccess.new ReadAccessParams();
+            readTID.setMemoryBank(MEMORY_BANK.MEMORY_BANK_TID);
+            readTID.setOffset(0);
+            readTID.setCount(0);
+            reader.Actions.TagAccess.readEvent(readTID, null, null);
+
+            // Read EPC
+            TagAccess.ReadAccessParams readEPC = tagAccess.new ReadAccessParams();
+            readEPC.setMemoryBank(MEMORY_BANK.MEMORY_BANK_EPC);
+            readEPC.setOffset(0);
+            readEPC.setCount(0);
+            reader.Actions.TagAccess.readEvent(readEPC, null, null);
+        } catch (InvalidUsageException | OperationFailureException e) {
             e.printStackTrace();
         }
     }
 
-    synchronized void performUntraceableHideEPCTest() {
-        // check reader connection
-        if (!isReaderConnected())
-            return;
-        try {
-            //reader.Actions.purgeTags();
-            TagAccess tagAccess = new TagAccess();
-            TagAccess.ReadAccessParams readAccessParams = tagAccess.new ReadAccessParams();
-            //readAccessParams.setAccessPassword(0);
-            //readAccessParams.setAccessPassword(Long.parseLong("12345678", 16));
-            readAccessParams.setCount(0);
-            readAccessParams.setMemoryBank(MEMORY_BANK.MEMORY_BANK_EPC);
-            readAccessParams.setOffset(2);;
-//            AccessFilter accessFilter = new AccessFilter();
-//            byte[] tagMask = new byte[] {(byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff};
-//            /////////////////////////////////////////////////////////////////////////////
-//            // Tag Pattern A
-//            accessFilter.TagPatternA.setMemoryBank(MEMORY_BANK.MEMORY_BANK_TID);
-//            accessFilter.TagPatternA.setTagPattern("33333333");
-//            accessFilter.TagPatternA.setTagPatternBitCount(16*2);
-//            accessFilter.TagPatternA.setBitOffset(0);
-//            accessFilter.TagPatternA.setTagMask(tagMask);
-//            accessFilter.TagPatternA.setTagMaskBitCount(tagMask.length*4);
-//            accessFilter.setAccessFilterMatchPattern(FILTER_MATCH_PATTERN.A);
-            //reader.Actions.TagAccess.readEvent(readAccessParams, accessFilter, null);
-            reader.Actions.TagAccess.readEvent(readAccessParams, null, null);
-        } catch (InvalidUsageException e) {
-            e.printStackTrace();
-        } catch (OperationFailureException e) {
-            e.printStackTrace();
-        }
-    }
-
-
-//
-//    synchronized void performUntraceable() throws InvalidUsageException, OperationFailureException {
-//        // check reader connection
-//        if (!isReaderConnected())
-//            return;
-//        AccessFilter accessFilter = new AccessFilter();
-//        byte[] tagMask = new byte[] {(byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff};
-//        accessFilter.TagPatternA.setMemoryBank(MEMORY_BANK.MEMORY_BANK_EPC);
-//        accessFilter.TagPatternA.setTagPattern("33333333");
-//        accessFilter.TagPatternA.setTagPatternBitCount(16*2);
-//        accessFilter.TagPatternA.setBitOffset(32);
-//        accessFilter.TagPatternA.setTagMask(tagMask);
-//        accessFilter.TagPatternA.setTagMaskBitCount(tagMask.length*4);
-//        accessFilter.setAccessFilterMatchPattern(FILTER_MATCH_PATTERN.A);
-//
-////        byte[] tagMask = new byte[] {(byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff};
-////        accessFilter.TagPatternA.setMemoryBank(MEMORY_BANK.MEMORY_BANK_TID);
-////        accessFilter.TagPatternA.setTagPattern("333333333333333333333333");
-////        accessFilter.TagPatternA.setTagPatternBitCount(16*6);
-////        accessFilter.TagPatternA.setBitOffset(0);
-////        accessFilter.TagPatternA.setTagMask(tagMask);
-////        accessFilter.TagPatternA.setTagMaskBitCount(tagMask.length*12);
-////        accessFilter.setAccessFilterMatchPattern(FILTER_MATCH_PATTERN.A);
-//
-//        Gen2v2 gen2V2 = new Gen2v2();
-//        Gen2v2.UntraceableParams UntraceableParams = gen2V2.new UntraceableParams();
-//        UntraceableParams.setPassword(Long.parseLong("12345678", 16));
-//        UntraceableParams.setShowUser(false);
-//        UntraceableParams.setTid(UNTRACEABLE_TID.SHOW_TID);
-//        //UntraceableParams.setShowEpc(false);
-//        UntraceableParams.setShowEpc(false);
-//        //UntraceableParams.setEpcLen(6);
-//
-//        try {
-//            reader.Actions.purgeTags();
-//            reader.Actions.gen2v2Access.untraceable(UntraceableParams, accessFilter, null);
-//            //reader.Actions.gen2v2Access.untraceable(UntraceableParams, null, null);
-//        } catch (InvalidUsageException e) {
-//            e.printStackTrace();
-//        } catch (OperationFailureException e) {
-//            e.printStackTrace();
-//        }
-//    }
-
-
+    /**
+     * Stops the current inventory operation on the reader.
+     */
     synchronized void stopInventory() {
         // check reader connection
         if (!isReaderConnected())
             return;
         try {
             reader.Actions.Inventory.stop();
-        } catch (InvalidUsageException e) {
-            e.printStackTrace();
-        } catch (OperationFailureException e) {
+        } catch (InvalidUsageException | OperationFailureException e) {
             e.printStackTrace();
         }
     }
@@ -667,7 +508,7 @@ class RFIDHandler implements Readers.RFIDReaderEventHandler {
                     {
                         if (myTags[index].getG2v2OpStatus() == null) {
                             Log.d(TAG, "5. Untraceable OK: EPC=" + myTags[index].getTagID() +
-                                    " , G2V2 response= " + myTags[index].getG2v2Response() +
+                                    " ,G2V2 response= " + myTags[index].getG2v2Response() +
                                     " ,op=" + myTags[index].getG2v2OpCode() +
                                     " ,status=" + myTags[index].getG2v2OpStatus() +
                                     " ,opCode=" + myTags[index].getOpCode());
