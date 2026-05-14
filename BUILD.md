@@ -4,7 +4,7 @@
 
 Current release: **v1.0.1**
 
-### v1.0.1 Updates
+### v1.0.1 Highlights
 - Updated debug build flow to use `assembleDebug`
 - Improved compatibility with Java 25 + Gradle 8.13
 - Included build-fix guidance used by the current scripts

@@ -96,6 +96,6 @@ Password: 0x00000001
 
 ---
 
-## Version
+## Release History
 - **v1.0.1** — Build stability fixes, script updates, and documentation refresh
 - **v1.0.0** — Initial release with Ucode 9xe tag support

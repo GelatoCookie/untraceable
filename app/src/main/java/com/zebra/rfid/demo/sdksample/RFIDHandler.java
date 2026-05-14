@@ -507,15 +507,13 @@ class RFIDHandler implements Readers.RFIDReaderEventHandler {
                     // untraceable
                     {
                         if (myTags[index].getG2v2Response() != null) {
-                            Log.d(TAG, "5. Untraceable OK: EPC=" + myTags[index].getTagID() +
-                                    " ,G2V2 response= " + myTags[index].getG2v2Response() +
+                            Log.d(TAG, "5. Untraceable response: EPC=" + myTags[index].getTagID() +
+                                    " ,G2V2 response=" + myTags[index].getG2v2Response() +
                                     " ,op=" + myTags[index].getG2v2OpCode() +
                                     " ,status=" + myTags[index].getG2v2OpStatus() +
                                     " ,opCode=" + myTags[index].getOpCode());
                             Log.d(TAG, "Untraceable Mem Bank Data " + myTags[index].getMemoryBankData());
-                            Log.d(TAG, "Untraceable EPC= " + myTags[index].getTagID());
-                        } else {
-                            Log.d(TAG, "Untraceable ERROR Status=" + myTags[index].getG2v2OpStatus() + " ,response=" + myTags[index].getG2v2Response());
+                            Log.d(TAG, "Untraceable EPC=" + myTags[index].getTagID());
                         }
                     }
                     //////////////////////////////////////////////////////////////
