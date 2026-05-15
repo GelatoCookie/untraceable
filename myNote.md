@@ -1,236 +1,50 @@
 # Project Notes — G2V2 Untraceable Feature
 
-## History
+## Current Snapshot
 
-### v1.0.1 (Current)
-- ✅ Fixed build workflow compatibility for Java 25 + Gradle 8.13
-- ✅ Updated `build-and-run.sh` to use `assembleDebug` for stable debug builds
-- ✅ Fixed Java multi-catch compile issue in `RFIDHandler.java`
-- ✅ Updated all markdown docs for release consistency
+- Documented release: **v1.0.3**
+- Current project root:
+  - `/Users/chucklin/StudioProjects/66_untraceable/untraceable`
+- Current package:
+  - `com.zebra.rfid.demo.sdksample`
 
-### v1.0.0
+## Implemented Behavior (Current Code)
 
-### v1.0.0 (Current)
-- ✅ Implemented `performUntraceable()` for Ucode 9xe tags
-  - Hide 2 words of EPC (from 6 words)
-  - Hide all TID (HIDE_ALL_TID)
-  - Access filter targeting tags with EPC pattern `33333333`
-  - Password authentication: `0x00000001`
+- `performUntraceable()` default:
+  - Hide EPC to 2 words (`setShowEpc(false)`, `setEpcLen(2)`)
+  - Show TID (`setTid(UNTRACEABLE_TID.SHOW_TID)`)
+- `restorePublicAccess()`:
+  - Restore EPC to 6 words (`setShowEpc(true)`, `setEpcLen(6)`)
+  - Show TID (`setTid(UNTRACEABLE_TID.SHOW_TID)`)
+- UI dialog supports runtime configuration of:
+  - password, EPC visibility/length, TID mode
+  - memory bank, tag pattern/bit count, bit offset, tag mask/bit count
+- Tag Pattern is auto-filled from first 2 EPC words of selected tag.
+- Dedicated UI button exists for restore public access.
 
-- ✅ Implemented `restorePublicAccess()` for Ucode 9xe tags
-  - Restore 6 words of EPC (full length)
-  - Restore all TID (SHOW_TID)
-  - Same access filter and password authentication
+## Hardening Already Applied
 
-- ✅ Created comprehensive documentation
-  - `untraceable.md`: Technical reference with code examples and memory bank layout
-  - `README.md`: Test results and feature documentation
+- Null-safe reader disappearance handling
+- Hex input validation on UI side
+- Safe hex parsing with explicit error checks
+- Null guard for access-read memory bank data logging
+- Menu handlers return immediately when handled
 
-- ✅ Testing completed and passed on Ucode 9xe tags
+## Markdown Files Aligned
 
----
+- `README.md`
+- `BUILD.md`
+- `untraceable.md`
+- `myNote.md`
 
-## To Do
+## Script Notes
 
-### Phase 2 - Enhanced Features
-- [ ] Implement selective TID hiding (hide specific TID banks, not all)
-- [ ] Add support for variable EPC lengths (1-6 words)
-- [ ] Implement User memory bank hiding
-- [ ] Add batch untraceable operations for multiple tag patterns
-- [ ] Create UI controls for password input and EPC pattern customization
+- `build-and-run.sh build` uses `assembleDebug`
+- `build-and-run.bat build` uses `assembleDebug --info`
 
-### Phase 3 - Tag Support Expansion
-- [ ] Test on additional tag models (Monza, XPOL, etc.)
-- [ ] Implement tag autodiscovery and capability detection
-- [ ] Add fallback logic for non-Gen2v2 tags
-- [ ] Create compatibility matrix documentation
+## v1.0.3 Release Notes
 
-### Phase 4 - Performance & Reliability
-- [ ] Optimize access filter matching algorithm
-- [ ] Implement retry logic for failed operations
-- [ ] Add operation timeout handling
-- [ ] Create performance benchmarks
-- [ ] Add logging and error reporting
-
-### Phase 5 - Documentation & Release
-- [ ] Create API documentation (JavaDoc)
-- [ ] Add unit tests with mock reader
-- [ ] Create user guide with examples
-- [ ] Add troubleshooting guide
-- [ ] Create demo app with UI flows
-
----
-
-## Directories
-
-### Local Directory
-```
-Project Root:
-/Users/chucklin/StudioProjects/69_G2V2
-
-Key Subdirectories:
-├── app/                           # Android app module
-│   ├── src/main/java/            # Main Java source files
-│   │   └── com/example/g2v2/
-│   │       ├── MainActivity.java  # UI and main logic
-│   │       ├── RFIDHandler.java   # RFID reader interface & Untraceable ops
-│   │       └── TagEntry.java      # Tag data model
-│   ├── src/main/res/             # Android resources
-│   │   ├── layout/               # XML layouts
-│   │   ├── values/               # Strings and constants
-│   │   └── drawable/             # Images and drawables
-│   ├── libs/                     # Local AAR libraries
-│   │   ├── API3_*.aar            # RFID reader API modules
-│   │   ├── rfidhostlib.aar       # Host library
-│   │   └── rfidseriallib.aar     # Serial communication library
-│   └── build.gradle              # App module build config
-│
-├── RFIDAPI3Library/              # RFID API 3 library module
-│   └── build.gradle              # Library build config
-│
-├── README.md                      # Test results and feature doc
-├── untraceable.md                # Technical reference
-├── myNote.md                      # This file
-├── build.gradle                   # Root project build config
-├── settings.gradle                # Project structure config
-└── gradle/                        # Gradle wrapper
-```
-
-### Remote Repository
-```
-Repository: [To be configured]
-Branch: main
-Tag: v1.0.1
-```
-
-**Note**: Configure remote after initial setup:
-```bash
-git remote add origin <repository-url>
-git push -u origin main
-git push origin v1.0.1
-```
-
----
-
-## Development Setup
-
-### Build Commands
-```bash
-# Build the app
-./gradlew build
-
-# Run tests
-./gradlew test
-
-# Create release APK
-./gradlew assembleRelease
-
-# Clean build
-./gradlew clean build
-```
-
-### Key Configuration Files
-- `local.properties` — Local SDK paths and configuration
-- `gradle.properties` — Gradle build properties
-- `build.gradle` (root) — Root project configuration
-- `app/build.gradle` — App module dependencies and build config
-
----
-
-## Build Fixes
-
-### Gradle/Java Compatibility Issue
-- **Problem**: Gradle 8.13 test task incompatible with Java 25
-- **Solution**: Updated `build-and-run.sh` to use `assembleDebug` instead of `build`
-  - Skips problematic unit test task during build
-  - Test task still available via `./build-and-run.sh test`
-  - Allows compilation and APK generation without Java version conflicts
-
-### Multi-Catch Syntax Error
-- **Problem**: `catch (InvalidUsageException | OperationFailureException | Exception e)`
-  - Java doesn't allow parent class alongside subclasses in multi-catch
-- **Solution**: Removed generic `Exception` from line 345 in RFIDHandler.java
-  - Kept specific exception handlers for RFID API exceptions
-  - Build now compiles successfully
-
-### Build Status
-✅ **BUILD SUCCESSFUL** with `./build-and-run.sh build`
-
----
-
-## Build & Run Automation Scripts (v1.0.0+)
-
-✅ **build-and-run.sh** (macOS/Linux)
-- Automated clean, build, and run workflow
-- Supports commands: clean, build, run, all, test, release, help
-- Colored output for easy readability
-- Comprehensive error handling and exit codes
-- Debug and release build support
-- Device/emulator detection and automatic app launching
-- Made executable: chmod +x build-and-run.sh
-
-✅ **build-and-run.bat** (Windows)
-- Windows batch equivalent of shell script
-- Identical commands and functionality
-- Error handling with errorlevel checks
-- Device deployment via ADB
-- Colored console output
-
-✅ **BUILD.md** (Comprehensive Documentation)
-- Full usage guide with examples for all platforms
-- Prerequisites and environment setup instructions
-- Troubleshooting section
-- CI/CD integration examples (GitHub Actions, GitLab CI)
-- Build artifact locations and signing configuration
-
-**Quick Commands:**
-```bash
-# macOS/Linux
-./build-and-run.sh all      # Clean, build, and run
-./build-and-run.sh clean    # Clean only
-./build-and-run.sh build    # Build only
-./build-and-run.sh release  # Build release APK
-./build-and-run.sh test     # Run tests
-
-# Windows
-build-and-run.bat all       # Clean, build, and run
-build-and-run.bat build     # Build only
-build-and-run.bat release   # Build release APK
-```
-
----
-
-## Code Cleanup (v1.0.0)
-
-✅ **RFIDHandler.java**
-- Removed 200+ lines of commented-out code blocks (old test implementations)
-- Removed unused `performUntraceableHideEPCTest()` method
-- Consolidated exception handling: Multi-catch syntax (`InvalidUsageException | OperationFailureException`)
-- Modernized code: Replaced anonymous Runnable with lambda expressions
-- Fixed formatting issues: Removed unnecessary null initializations
-- Added Javadoc comments to public methods: `Test1()`, `Test2()`, `Defaults()`, `performInventory()`, `performUntraceable()`, `restorePublicAccess()`, `stopInventory()`
-- Removed double semicolon and extra blank lines
-- Final size: 575 lines (from ~800+ with dead code)
-
-✅ **MainActivity.java**
-- Aligned variable declarations consistently
-- Simplified menu item handler formatting
-- Final size: 211 lines
-
-✅ **TagEntry.java**
-- Added class-level Javadoc documentation
-- Final size: 19 lines
-
-**Files Improved:**
-- RFIDHandler.java: ~30% reduction in lines due to dead code removal
-- All files now follow consistent code style and documentation standards
-- Exception handling standardized across all methods
-
----
-
-## Related Files
-
-- **untraceable.md** — Complete technical reference with code examples
-- **README.md** — User-facing documentation and test results
-- **app/src/main/java/com/example/g2v2/RFIDHandler.java** — Core implementation
-- **app/src/main/java/com/example/g2v2/MainActivity.java** — UI integration
+- Explicit Gen2v2 success-state handling in `eventReadNotify()`
+- RFID status text now surfaces Untraceable success, failure, or unavailable status
+- Bottom-of-screen controls reorganized into a cleaner panel layout
+- Windows build script aligned with shell-script debug build behavior

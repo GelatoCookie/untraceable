@@ -2,14 +2,9 @@
 
 ## Release
 
-Current release: **v1.0.1**
+Current documented release: **v1.0.3**
 
-### v1.0.1 Highlights
-- Updated debug build flow to use `assembleDebug`
-- Improved compatibility with Java 25 + Gradle 8.13
-- Included build-fix guidance used by the current scripts
-
-Automated scripts to clean, build, and run the G2V2 RFID application on macOS/Linux or Windows.
+Automated scripts are provided to clean, build, test, and run the RFID app on macOS/Linux and Windows.
 
 ## Quick Start
 
@@ -30,7 +25,7 @@ build-and-run.bat all
 | Command | Description |
 |---------|-------------|
 | `clean` | Remove all build artifacts and intermediate files |
-| `build` | Build debug APK |
+| `build` | Build debug variant |
 | `run` | Install and launch app on connected device/emulator |
 | `all` | Clean → Build → Run (default) |
 | `test` | Run unit tests |
@@ -93,12 +88,25 @@ build-and-run.bat help
 
 ---
 
+## Script Parity
+
+Current script implementation is aligned across platforms:
+
+- `build-and-run.sh` (`build` command) runs:
+  - `./gradlew assembleDebug --info`
+- `build-and-run.bat` (`build` command) runs:
+  - `gradlew.bat assembleDebug --info`
+
+Both scripts also validate that an Android device/emulator is connected before attempting install/launch.
+
+---
+
 ## Prerequisites
 
 ### Required
 - Android SDK (API 21 or higher)
 - Gradle (included via gradlew)
-- Java Development Kit (JDK 8 or higher)
+- Java Development Kit (JDK 8 or higher; current environment tested with newer JDK)
 
 ### For Running on Device/Emulator
 - Android Device or Emulator connected via USB/ADB
@@ -269,9 +277,3 @@ For issues or questions:
 2. Review untraceable.md for technical details
 3. Examine build logs in `app/build/outputs/logs/`
 4. Run with `--info` flag for verbose output
-
----
-
-## License
-
-See LICENSE file in project root.

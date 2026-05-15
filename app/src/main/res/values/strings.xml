@@ -6,4 +6,11 @@
     <string name="action_access">Read TID and EPC Test</string>
     <string name="action_restore_public_access">Restore Public Access for TID and EPC</string>
     <string name="action_clesr">Clear UI</string>
+
+    <string-array name="memory_banks">
+        <item>MEMORY_BANK_EPC</item>
+        <item>MEMORY_BANK_TID</item>
+        <item>MEMORY_BANK_USER</item>
+        <item>MEMORY_BANK_RESERVED</item>
+    </string-array>
 </resources>

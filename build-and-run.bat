@@ -84,7 +84,7 @@ exit /b 0
 :build_debug
 echo.
 echo [INFO] Building debug APK...
-call "%GRADLE_WRAPPER%" build --info
+call "%GRADLE_WRAPPER%" assembleDebug --info
 if errorlevel 1 (
     echo [ERROR] Build failed
     exit /b 1
@@ -116,6 +116,13 @@ echo [SUCCESS] Tests completed
 exit /b 0
 
 :run_on_device
+call :has_connected_device
+if errorlevel 1 (
+    echo [ERROR] No connected Android device/emulator found.
+    echo [INFO] Connect a device or start an emulator, then run: build-and-run.bat run
+    exit /b 1
+)
+
 echo.
 echo [INFO] Installing debug APK on device...
 call "%GRADLE_WRAPPER%" installDebug
@@ -133,6 +140,18 @@ if errorlevel 1 (
     exit /b 1
 )
 echo [SUCCESS] App launched
+exit /b 0
+
+:has_connected_device
+where adb >nul 2>&1
+if errorlevel 1 (
+    exit /b 1
+)
+
+for /f %%C in ('adb devices ^| findstr /R /C:" device$" ^| find /C /V ""') do set DEVICE_COUNT=%%C
+if "%DEVICE_COUNT%"=="0" (
+    exit /b 1
+)
 exit /b 0
 
 :show_help

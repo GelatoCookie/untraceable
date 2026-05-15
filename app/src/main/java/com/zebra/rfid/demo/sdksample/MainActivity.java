@@ -1,6 +1,7 @@
 package com.zebra.rfid.demo.sdksample;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -16,8 +17,15 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
+import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.zebra.rfid.api3.ACCESS_OPERATION_CODE;
 import com.zebra.rfid.api3.ACCESS_OPERATION_STATUS;
@@ -66,12 +74,23 @@ public class MainActivity extends AppCompatActivity implements RFIDHandler.Respo
         tagAdapter = new TagAdapter(this, new ArrayList<>());
         listViewTags.setAdapter(tagAdapter);
 
+        // Handle tag selection for Untraceable operation
+        listViewTags.setOnItemClickListener((parent, view, position, id) -> {
+            TagEntry selectedTag = (TagEntry) parent.getItemAtPosition(position);
+            showUntraceableDialog(selectedTag);
+        });
+
         rfidHandler = new RFIDHandler();
         rfidHandler.onCreate(this);
 
         findViewById(R.id.button).setOnClickListener(v  -> testStatus.setText(rfidHandler.Test1()));
         findViewById(R.id.button2).setOnClickListener(v -> testStatus.setText(rfidHandler.Test2()));
         findViewById(R.id.button3).setOnClickListener(v -> testStatus.setText(rfidHandler.Defaults()));
+        findViewById(R.id.buttonRestoreAccess).setOnClickListener(v -> {
+            clearTagList();
+            rfidHandler.restorePublicAccess();
+            testStatus.setText("Restore Public Access triggered");
+        });
     }
 
     @Override
@@ -84,13 +103,34 @@ public class MainActivity extends AppCompatActivity implements RFIDHandler.Respo
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
 
-        if (id == R.id.action_settings) return true;
-        clearTagList();
-        if (id == R.id.action_start) rfidHandler.performUntraceable();
-        if (id == R.id.action_stop) rfidHandler.stopInventory();
-        if (id == R.id.action_access) rfidHandler.performAccessTID();
-        if (id == R.id.action_restore_public_access) rfidHandler.restorePublicAccess();
-        if (id == R.id.action_clesr) clearTagList();
+        if (id == R.id.action_settings) {
+            return true;
+        }
+        if (id == R.id.action_stop) {
+            rfidHandler.stopInventory();
+            return true;
+        }
+        if (id == R.id.action_clesr) {
+            clearTagList();
+            return true;
+        }
+
+        if (id == R.id.action_start) {
+            clearTagList();
+            rfidHandler.performUntraceable();
+            return true;
+        }
+        if (id == R.id.action_access) {
+            clearTagList();
+            rfidHandler.performAccessTID();
+            return true;
+        }
+        if (id == R.id.action_restore_public_access) {
+            clearTagList();
+            rfidHandler.restorePublicAccess();
+            return true;
+        }
+
         return super.onOptionsItemSelected(item);
     }
 
@@ -158,6 +198,208 @@ public class MainActivity extends AppCompatActivity implements RFIDHandler.Respo
             rfidHandler.performInventory();
         } else {
             rfidHandler.stopInventory();
+        }
+    }
+
+    // ── Untraceable Operation Dialog ────────────────────────────────────────────
+
+    /**
+     * Shows dialog for configuring Untraceable operation on a selected tag.
+     */
+    private void showUntraceableDialog(TagEntry selectedTag) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Configure Untraceable for " + selectedTag.tagId);
+
+        // Inflate the dialog layout
+        LayoutInflater inflater = LayoutInflater.from(this);
+        View dialogView = inflater.inflate(R.layout.dialog_untraceable, null);
+        builder.setView(dialogView);
+
+        // Dialog controls
+        EditText etPassword = dialogView.findViewById(R.id.etPassword);
+        CheckBox cbShowEpc = dialogView.findViewById(R.id.cbShowEpc);
+        EditText etEpcLen = dialogView.findViewById(R.id.etEpcLen);
+        RadioGroup rgTidOption = dialogView.findViewById(R.id.rgTidOption);
+        Spinner spinnerMemoryBank = dialogView.findViewById(R.id.spinnerMemoryBank);
+        EditText etTagPattern = dialogView.findViewById(R.id.etTagPattern);
+        EditText etTagPatternBitCount = dialogView.findViewById(R.id.etTagPatternBitCount);
+        EditText etBitOffset = dialogView.findViewById(R.id.etBitOffset);
+        EditText etTagMask = dialogView.findViewById(R.id.etTagMask);
+        EditText etTagMaskBitCount = dialogView.findViewById(R.id.etTagMaskBitCount);
+        Button btnCancel = dialogView.findViewById(R.id.btnDialogCancel);
+        Button btnApply = dialogView.findViewById(R.id.btnDialogApply);
+
+        // Auto-match the tag pattern to the first 2 words (8 hex chars) of the selected EPC.
+        String epcPrefixPattern = getFirstTwoWordPattern(selectedTag.tagId);
+        if (!epcPrefixPattern.isEmpty()) {
+            selectedTag.tagPattern = epcPrefixPattern;
+            selectedTag.tagPatternBitCount = epcPrefixPattern.length() * 4;
+        }
+
+        // Populate with current tag values
+        etPassword.setText(selectedTag.password);
+        cbShowEpc.setChecked(selectedTag.showEpc);
+        etEpcLen.setText(String.valueOf(selectedTag.epcLen));
+        setSpinnerToValue(spinnerMemoryBank, selectedTag.accessFilterMemoryBank);
+        etTagPattern.setText(selectedTag.tagPattern);
+        etTagPatternBitCount.setText(String.valueOf(selectedTag.tagPatternBitCount));
+        etBitOffset.setText(String.valueOf(selectedTag.bitOffset));
+        etTagMask.setText(selectedTag.tagMask);
+        etTagMaskBitCount.setText(String.valueOf(selectedTag.tagMaskBitCount));
+
+        // Set TID option radio button
+        if ("SHOW_TID".equals(selectedTag.tidOption)) {
+            rgTidOption.check(R.id.rbShowTid);
+        } else if ("SHOW_USER".equals(selectedTag.tidOption)) {
+            rgTidOption.check(R.id.rbShowUser);
+        } else {
+            rgTidOption.check(R.id.rbHideAllTid);
+        }
+
+        AlertDialog dialog = builder.create();
+
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+        btnApply.setOnClickListener(v -> {
+            if (applyUntraceableParameters(selectedTag, etPassword, cbShowEpc, etEpcLen, rgTidOption,
+                    spinnerMemoryBank,
+                    etTagPattern, etTagPatternBitCount, etBitOffset, etTagMask, etTagMaskBitCount)) {
+                Toast.makeText(MainActivity.this, "Applying Untraceable operation...", Toast.LENGTH_SHORT).show();
+                rfidHandler.performUntraceableWithParams(selectedTag);
+                dialog.dismiss();
+            }
+        });
+
+        dialog.show();
+    }
+
+    private String getFirstTwoWordPattern(String epc) {
+        if (epc == null) {
+            return "";
+        }
+        String normalized = epc.replaceAll("[^0-9A-Fa-f]", "").toUpperCase();
+        int hexCharsForTwoWords = 8;
+        if (normalized.length() <= hexCharsForTwoWords) {
+            return normalized;
+        }
+        return normalized.substring(0, hexCharsForTwoWords);
+    }
+
+    private void setSpinnerToValue(Spinner spinner, String value) {
+        if (spinner.getAdapter() instanceof ArrayAdapter) {
+            @SuppressWarnings("unchecked")
+            ArrayAdapter<String> adapter = (ArrayAdapter<String>) spinner.getAdapter();
+            int position = adapter.getPosition(value);
+            if (position >= 0) {
+                spinner.setSelection(position);
+            }
+        }
+    }
+
+    private boolean isHex(String value) {
+        return value != null && value.matches("^[0-9A-Fa-f]+$");
+    }
+
+    /**
+     * Validates and applies user input from Untraceable dialog to TagEntry.
+     */
+    private boolean applyUntraceableParameters(TagEntry tag, EditText etPassword,
+            CheckBox cbShowEpc, EditText etEpcLen, RadioGroup rgTidOption, Spinner spinnerMemoryBank,
+            EditText etTagPattern, EditText etTagPatternBitCount, EditText etBitOffset,
+            EditText etTagMask, EditText etTagMaskBitCount) {
+
+        try {
+            String password = etPassword.getText().toString().trim();
+            if (password.isEmpty()) {
+                Toast.makeText(this, "Password cannot be empty", Toast.LENGTH_SHORT).show();
+                return false;
+            }
+            if (!isHex(password) || password.length() > 8) {
+                Toast.makeText(this, "Password must be 1-8 hex chars", Toast.LENGTH_SHORT).show();
+                return false;
+            }
+            tag.password = password;
+
+            tag.showEpc = cbShowEpc.isChecked();
+
+            int epcLen = Integer.parseInt(etEpcLen.getText().toString());
+            if (epcLen <= 0 || epcLen > 6) {
+                Toast.makeText(this, "EPC Length must be between 1 and 6 words", Toast.LENGTH_SHORT).show();
+                return false;
+            }
+            tag.epcLen = epcLen;
+
+            int selectedTidId = rgTidOption.getCheckedRadioButtonId();
+            if (selectedTidId == R.id.rbShowTid) {
+                tag.tidOption = "SHOW_TID";
+            } else if (selectedTidId == R.id.rbShowUser) {
+                tag.tidOption = "SHOW_USER";
+            } else {
+                tag.tidOption = "HIDE_ALL_TID";
+            }
+
+            Object selectedMemoryBank = spinnerMemoryBank.getSelectedItem();
+            if (selectedMemoryBank == null) {
+                Toast.makeText(this, "Select a memory bank", Toast.LENGTH_SHORT).show();
+                return false;
+            }
+            tag.accessFilterMemoryBank = selectedMemoryBank.toString();
+
+            String pattern = etTagPattern.getText().toString().trim();
+            if (pattern.isEmpty()) {
+                Toast.makeText(this, "Tag Pattern cannot be empty", Toast.LENGTH_SHORT).show();
+                return false;
+            }
+            if (!isHex(pattern) || (pattern.length() % 2 != 0)) {
+                Toast.makeText(this, "Tag Pattern must be even-length hex", Toast.LENGTH_SHORT).show();
+                return false;
+            }
+            tag.tagPattern = pattern;
+
+            int patternBitCount = Integer.parseInt(etTagPatternBitCount.getText().toString());
+            if (patternBitCount <= 0 || patternBitCount > 96) {
+                Toast.makeText(this, "Tag Pattern Bit Count must be between 1 and 96", Toast.LENGTH_SHORT).show();
+                return false;
+            }
+            if (patternBitCount > pattern.length() * 4) {
+                Toast.makeText(this, "Pattern Bit Count exceeds pattern length", Toast.LENGTH_SHORT).show();
+                return false;
+            }
+            tag.tagPatternBitCount = patternBitCount;
+
+            int bitOffset = Integer.parseInt(etBitOffset.getText().toString());
+            if (bitOffset < 0) {
+                Toast.makeText(this, "Bit Offset cannot be negative", Toast.LENGTH_SHORT).show();
+                return false;
+            }
+            tag.bitOffset = bitOffset;
+
+            String mask = etTagMask.getText().toString().trim();
+            if (mask.isEmpty()) {
+                Toast.makeText(this, "Tag Mask cannot be empty", Toast.LENGTH_SHORT).show();
+                return false;
+            }
+            if (!isHex(mask) || (mask.length() % 2 != 0)) {
+                Toast.makeText(this, "Tag Mask must be even-length hex", Toast.LENGTH_SHORT).show();
+                return false;
+            }
+            tag.tagMask = mask;
+
+            int maskBitCount = Integer.parseInt(etTagMaskBitCount.getText().toString());
+            if (maskBitCount <= 0 || maskBitCount > 96) {
+                Toast.makeText(this, "Tag Mask Bit Count must be between 1 and 96", Toast.LENGTH_SHORT).show();
+                return false;
+            }
+            if (maskBitCount > mask.length() * 4) {
+                Toast.makeText(this, "Mask Bit Count exceeds mask length", Toast.LENGTH_SHORT).show();
+                return false;
+            }
+            tag.tagMaskBitCount = maskBitCount;
+
+            return true;
+        } catch (NumberFormatException e) {
+            Toast.makeText(this, "Invalid number format", Toast.LENGTH_SHORT).show();
+            return false;
         }
     }
 

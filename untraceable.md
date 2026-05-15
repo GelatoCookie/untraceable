@@ -2,12 +2,14 @@
 
 ## Release
 
-Current release: **v1.0.1**
+Current documented release: **v1.0.3**
 
-### v1.0.1 Highlights
-- Documentation aligned with current implementation in RFIDHandler
-- Callback guidance consolidated for deterministic Gen2v2 telemetry handling
-- Verification and failure-mode sections standardized for project docs
+### v1.0.3 Highlights
+- Untraceable UI supports per-tag parameterized AccessFilter and operation settings
+- Default behavior aligned to Hide EPC + Show TID
+- Callback and input validation hardened to reduce runtime faults
+- Gen2v2 Untraceable callback now uses explicit success statuses instead of treating `null` status as success
+- Main-screen controls keep restore and operation feedback available in the bottom panel
 
 ## Scope
 
@@ -15,6 +17,7 @@ This specification defines behavior and validation for:
 
 - `performUntraceable()` on EPC-matched tags
 - `restorePublicAccess()` for visibility rollback
+- `performUntraceableWithParams(TagEntry)` for UI-driven custom execution
 - `performAccessTID()` for TID/EPC read verification
 - `eventReadNotify()` handling of access and Gen2v2 telemetry
 
@@ -31,7 +34,7 @@ Out of scope:
 - Reader is connected and configured
 - Trigger mode is set to RFID mode
 - Tag read events are enabled
-- Target tags match EPC filter pattern `33333333`
+- Target tags match EPC filter criteria (default pattern `33333333` or UI-specified)
 - Access password and RF settings are valid for the environment
 
 ---
@@ -73,7 +76,7 @@ accessFilter.setAccessFilterMatchPattern(FILTER_MATCH_PATTERN.A);
 Purpose:
 
 - Restrict visible EPC length to 2 words
-- Hide full TID bank for matched tags
+- Keep TID visible for matched tags (current default)
 
 Inputs:
 
@@ -94,12 +97,30 @@ Reference snippet:
 ```java
 Gen2v2.UntraceableParams p = gen2V2.new UntraceableParams();
 p.setPassword(Long.parseLong("00000001", 16));
-p.setShowEpc(true);
+p.setShowEpc(false);
 p.setHideEpc(false);
 p.setEpcLen(2);
-p.setTid(UNTRACEABLE_TID.HIDE_ALL_TID);
+p.setTid(UNTRACEABLE_TID.SHOW_TID);
 reader.Actions.gen2v2Access.untraceable(p, accessFilter, null);
 ```
+
+### performUntraceableWithParams(TagEntry)
+
+Purpose:
+
+- Execute Untraceable with runtime parameters from UI selection
+
+Inputs (from `TagEntry`):
+
+- `password` (hex)
+- `showEpc`, `epcLen`
+- `tidOption`
+- `accessFilterMemoryBank`, `tagPattern`, `tagPatternBitCount`, `bitOffset`, `tagMask`, `tagMaskBitCount`
+
+Validation/hardening behavior:
+
+- Hex conversion enforces non-empty, even-length, valid hex characters
+- Illegal parameter formatting is trapped by `IllegalArgumentException`
 
 ### restorePublicAccess()
 
@@ -171,14 +192,23 @@ reader.Actions.TagAccess.readEvent(readEPC, null, null);
 
 ### Design Requirement
 
-Untraceable telemetry must be interpreted strictly from Gen2v2 fields. Tags without Gen2v2 response data are not Untraceable failures.
+Untraceable telemetry must be interpreted strictly from Gen2v2 opcode and status fields. A missing Gen2v2 status is unknown telemetry, not implicit success.
 
 ### Consolidated Rules
 
-- Gate Untraceable logs with `tag.getG2v2Response() != null`
+- Gate Untraceable handling with `tag.getG2v2OpCode() == G2V2_OPERATION_UNTRACEABLE`
+- Treat only these statuses as success:
+    - `ACCESS_SUCCESS`
+    - `ACCESS_SUCCESS_STORED_WITHOUT_LENGTH`
+    - `ACCESS_SUCCESS_STORED_WITH_LENGTH`
+    - `ACCESS_SUCCESS_SEND_WITHOUT_LENGTH`
+    - `ACCESS_SUCCESS_SEND_WITH_LENGTH`
+- Do not treat `null` `getG2v2OpStatus()` as success
 - Keep access-read logs and Untraceable logs in separate branches
 - Log EPC, G2v2 op code, status, and response on the same line
+- Surface Untraceable success/failure state to the existing RFID status text view
 - Preserve asynchronous handoff to `AsyncDataUpdate`
+- Guard memory-bank access read with `tag.getMemoryBankData() != null`
 
 ### Callback Core Reference
 
@@ -194,15 +224,28 @@ public void eventReadNotify(RfidReadEvents e) {
 
         if (tag.getOpCode() == ACCESS_OPERATION_CODE.ACCESS_OPERATION_READ
                 && tag.getOpStatus() == ACCESS_OPERATION_STATUS.ACCESS_SUCCESS
+                && tag.getMemoryBankData() != null
                 && tag.getMemoryBankData().length() > 0) {
             Log.d(TAG, "MemBank=" + tag.getMemoryBank() + " data=" + tag.getMemoryBankData());
         }
 
-        if (tag.getG2v2Response() != null) {
+        if (tag.getG2v2OpCode() == GEN2V2_OPERATION_CODE.G2V2_OPERATION_UNTRACEABLE) {
+            GEN2V2_OPERATION_STATUS g2v2Status = tag.getG2v2OpStatus();
+            String g2v2Response = tag.getG2v2Response();
+
             Log.d(TAG, "Untraceable response: EPC=" + tag.getTagID()
                     + " op=" + tag.getG2v2OpCode()
-                    + " status=" + tag.getG2v2OpStatus()
-                    + " response=" + tag.getG2v2Response());
+                    + " status=" + g2v2Status
+                    + " response=" + g2v2Response);
+
+            if (isSuccessfulGen2v2Status(g2v2Status)) {
+                updateReaderStatus("Untraceable success: " + tag.getTagID());
+                stopInventory();
+            } else if (g2v2Status != null) {
+                updateReaderStatus("Untraceable failed: " + g2v2Status);
+            } else {
+                updateReaderStatus("Untraceable status unavailable");
+            }
         }
     }
 
@@ -217,8 +260,12 @@ public void eventReadNotify(RfidReadEvents e) {
 ### Functional Checks
 
 - After `performUntraceable()`, at least one `Untraceable response` log has non-null response
+- After `performUntraceable()`, success is accepted only when `getG2v2OpStatus()` is one of the documented success constants
+- If `getG2v2OpStatus()` is non-success, the RFID status text reports `Untraceable failed: <STATUS>`
+- If `getG2v2OpStatus()` is `null`, the RFID status text reports `Untraceable status unavailable`
 - During plain inventory, no Untraceable response log should appear
 - After `restorePublicAccess()`, response logs continue and TID/EPC access reads succeed
+- After UI execution, selected memory bank and filter values are applied in AccessFilter
 
 ### Regression Checks
 
@@ -235,7 +282,8 @@ Failure classes:
 - Parameter/config errors (mask/offset/bank mismatches)
 - Authentication errors (incorrect access password)
 - RF/protocol execution failures
-- Telemetry interpretation mistakes (mixing inventory with Gen2v2 result logic)
+- Telemetry interpretation mistakes (mixing inventory with Gen2v2 result logic or treating missing status as success)
+- UI input format failures (invalid hex, invalid bit-count-to-length relationship)
 
 Recommended observability fields:
 

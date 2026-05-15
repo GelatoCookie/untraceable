@@ -1,0 +1,376 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Title -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Untraceable Operation"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:textColor="#212121"
+            android:layout_marginBottom="16dp" />
+
+        <!-- ─── Untraceable Parameters Section (TOP) ──────────────── -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#F5F5F5"
+            android:padding="12dp"
+            android:layout_marginBottom="12dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Untraceable Parameters"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:textColor="#1976D2"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Password -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="12dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Password (Hex)"
+                    android:textSize="12sp"
+                    android:textColor="#666666"
+                    android:layout_marginBottom="4dp" />
+
+                <EditText
+                    android:id="@+id/etPassword"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:inputType="text"
+                    android:hint="e.g., 00000001"
+                    android:padding="8dp"
+                    android:background="#FFFFFF"
+                    android:text="00000001"
+                    android:textSize="12sp" />
+
+            </LinearLayout>
+
+            <!-- Show EPC -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="12dp"
+                android:gravity="center_vertical">
+
+                <CheckBox
+                    android:id="@+id/cbShowEpc"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="false" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Show EPC"
+                    android:textSize="13sp"
+                    android:textColor="#333333"
+                    android:layout_marginStart="8dp" />
+
+            </LinearLayout>
+
+            <!-- EPC Length -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="12dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="EPC Length (words)"
+                    android:textSize="12sp"
+                    android:textColor="#666666"
+                    android:layout_marginBottom="4dp" />
+
+                <EditText
+                    android:id="@+id/etEpcLen"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:inputType="number"
+                    android:hint="e.g., 2 (hide) or 6 (restore)"
+                    android:padding="8dp"
+                    android:background="#FFFFFF"
+                    android:text="2"
+                    android:textSize="12sp" />
+
+            </LinearLayout>
+
+            <!-- TID Option -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="TID Visibility"
+                    android:textSize="12sp"
+                    android:textColor="#666666"
+                    android:layout_marginBottom="4dp" />
+
+                <RadioGroup
+                    android:id="@+id/rgTidOption"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <RadioButton
+                        android:id="@+id/rbHideAllTid"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Hide All TID" />
+
+                    <RadioButton
+                        android:id="@+id/rbShowTid"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Show TID"
+                        android:checked="true" />
+
+                    <RadioButton
+                        android:id="@+id/rbShowUser"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Show User Memory" />
+
+                </RadioGroup>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- ─── AccessFilter Section ───────────────────────────── -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#F5F5F5"
+            android:padding="12dp"
+            android:layout_marginBottom="12dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="AccessFilter Parameters"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:textColor="#1976D2"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Memory Bank -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="12dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Memory Bank"
+                    android:textSize="12sp"
+                    android:textColor="#666666"
+                    android:layout_marginBottom="4dp" />
+
+                <Spinner
+                    android:id="@+id/spinnerMemoryBank"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:padding="8dp"
+                    android:background="#FFFFFF"
+                    android:entries="@array/memory_banks" />
+
+            </LinearLayout>
+
+            <!-- Tag Pattern -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="12dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Tag Pattern (Hex)"
+                    android:textSize="12sp"
+                    android:textColor="#666666"
+                    android:layout_marginBottom="4dp" />
+
+                <EditText
+                    android:id="@+id/etTagPattern"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:inputType="text"
+                    android:hint="e.g., 33333333"
+                    android:padding="8dp"
+                    android:background="#FFFFFF"
+                    android:textSize="12sp" />
+
+            </LinearLayout>
+
+            <!-- Tag Pattern Bit Count -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="12dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Tag Pattern Bit Count"
+                    android:textSize="12sp"
+                    android:textColor="#666666"
+                    android:layout_marginBottom="4dp" />
+
+                <EditText
+                    android:id="@+id/etTagPatternBitCount"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:inputType="number"
+                    android:hint="e.g., 32"
+                    android:padding="8dp"
+                    android:background="#FFFFFF"
+                    android:text="32"
+                    android:textSize="12sp" />
+
+            </LinearLayout>
+
+            <!-- Bit Offset -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="12dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Bit Offset"
+                    android:textSize="12sp"
+                    android:textColor="#666666"
+                    android:layout_marginBottom="4dp" />
+
+                <EditText
+                    android:id="@+id/etBitOffset"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:inputType="number"
+                    android:hint="e.g., 32 (2 words)"
+                    android:padding="8dp"
+                    android:background="#FFFFFF"
+                    android:text="32"
+                    android:textSize="12sp" />
+
+            </LinearLayout>
+
+            <!-- Tag Mask -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="12dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Tag Mask (Hex)"
+                    android:textSize="12sp"
+                    android:textColor="#666666"
+                    android:layout_marginBottom="4dp" />
+
+                <EditText
+                    android:id="@+id/etTagMask"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:inputType="text"
+                    android:hint="e.g., FFFFFFFF"
+                    android:padding="8dp"
+                    android:background="#FFFFFF"
+                    android:text="FFFFFFFF"
+                    android:textSize="12sp" />
+
+            </LinearLayout>
+
+            <!-- Tag Mask Bit Count -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Tag Mask Bit Count"
+                    android:textSize="12sp"
+                    android:textColor="#666666"
+                    android:layout_marginBottom="4dp" />
+
+                <EditText
+                    android:id="@+id/etTagMaskBitCount"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:inputType="number"
+                    android:hint="e.g., 32"
+                    android:padding="8dp"
+                    android:background="#FFFFFF"
+                    android:text="32"
+                    android:textSize="12sp" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- ─── Action Buttons ──────────────────────────────────── -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="end"
+            android:layout_marginTop="12dp">
+
+            <Button
+                android:id="@+id/btnDialogCancel"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Cancel"
+                android:layout_marginEnd="8dp" />
+
+            <Button
+                android:id="@+id/btnDialogApply"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Apply Untraceable"
+                android:backgroundTint="@color/colorAccent" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>

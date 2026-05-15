@@ -12,6 +12,7 @@ import com.zebra.rfid.api3.ENUM_TRANSPORT;
 import com.zebra.rfid.api3.ENUM_TRIGGER_MODE;
 import com.zebra.rfid.api3.FILTER_MATCH_PATTERN;
 import com.zebra.rfid.api3.GEN2V2_OPERATION_CODE;
+import com.zebra.rfid.api3.GEN2V2_OPERATION_STATUS;
 import com.zebra.rfid.api3.Gen2v2;
 import com.zebra.rfid.api3.HANDHELD_TRIGGER_EVENT_TYPE;
 import com.zebra.rfid.api3.INVENTORY_STATE;
@@ -264,7 +265,7 @@ class RFIDHandler implements Readers.RFIDReaderEventHandler {
     @Override
     public void RFIDReaderDisappeared(ReaderDevice readerDevice) {
         Log.d(TAG, "RFIDReaderDisappeared " + readerDevice.getName());
-        if (readerDevice.getName().equals(reader.getHostName()))
+        if (reader != null && readerDevice.getName().equals(reader.getHostName()))
             disconnect();
     }
 
@@ -401,10 +402,10 @@ class RFIDHandler implements Readers.RFIDReaderEventHandler {
             Gen2v2 gen2V2 = new Gen2v2();
             Gen2v2.UntraceableParams untraceableParams = gen2V2.new UntraceableParams();
             untraceableParams.setPassword(Long.parseLong("00000001", 16));
-            untraceableParams.setShowEpc(true);
+            untraceableParams.setShowEpc(false);
             untraceableParams.setHideEpc(false);
             untraceableParams.setEpcLen(2);
-            untraceableParams.setTid(UNTRACEABLE_TID.HIDE_ALL_TID);
+            untraceableParams.setTid(UNTRACEABLE_TID.SHOW_TID);
             reader.Actions.gen2v2Access.untraceable(untraceableParams, accessFilter, null);
         } catch (InvalidUsageException | OperationFailureException e) {
             e.printStackTrace();
@@ -443,6 +444,120 @@ class RFIDHandler implements Readers.RFIDReaderEventHandler {
             reader.Actions.gen2v2Access.untraceable(untraceableParams, accessFilter, null);
         } catch (InvalidUsageException | OperationFailureException e) {
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * Executes Untraceable operation with custom parameters from TagEntry.
+     * Allows user to configure AccessFilter and Untraceable parameters via UI dialog.
+     * @param tag TagEntry containing custom Untraceable parameters
+     */
+    synchronized void performUntraceableWithParams(TagEntry tag) {
+        // check reader connection
+        if (!isReaderConnected())
+            return;
+        try {
+            reader.Actions.purgeTags();
+
+            // Configure AccessFilter from TagEntry parameters
+            AccessFilter accessFilter = new AccessFilter();
+            
+            // Convert hex string mask to byte array
+            byte[] tagMask = hexStringToByteArray(tag.tagMask);
+            
+            // Determine memory bank from string
+            MEMORY_BANK memoryBank = parseMemoryBank(tag.accessFilterMemoryBank);
+            
+            accessFilter.TagPatternA.setMemoryBank(memoryBank);
+            accessFilter.TagPatternA.setTagPattern(tag.tagPattern);
+            accessFilter.TagPatternA.setTagPatternBitCount(tag.tagPatternBitCount);
+            accessFilter.TagPatternA.setBitOffset(tag.bitOffset); // Use custom bit offset from UI
+            accessFilter.TagPatternA.setTagMask(tagMask);
+            accessFilter.TagPatternA.setTagMaskBitCount(tag.tagMaskBitCount);
+            accessFilter.setAccessFilterMatchPattern(FILTER_MATCH_PATTERN.A);
+
+            // Configure Untraceable parameters from TagEntry
+            Gen2v2 gen2V2 = new Gen2v2();
+            Gen2v2.UntraceableParams untraceableParams = gen2V2.new UntraceableParams();
+            untraceableParams.setPassword(Long.parseLong(tag.password, 16)); // Use custom password from UI
+            untraceableParams.setShowEpc(tag.showEpc);
+            untraceableParams.setHideEpc(false);
+            untraceableParams.setEpcLen(tag.epcLen);
+            
+            // Set TID visibility based on tidOption
+            UNTRACEABLE_TID tidOption = parseTidOption(tag.tidOption);
+            untraceableParams.setTid(tidOption);
+            
+            if ("SHOW_USER".equals(tag.tidOption)) {
+                untraceableParams.setShowUser(true);
+            }
+
+            reader.Actions.gen2v2Access.untraceable(untraceableParams, accessFilter, null);
+            Log.d(TAG, "Untraceable operation initiated with custom parameters for pattern: " + tag.tagPattern 
+                    + " password: " + tag.password + " bitOffset: " + tag.bitOffset);
+        } catch (IllegalArgumentException e) {
+            Log.e(TAG, "Invalid Untraceable input parameters", e);
+        } catch (InvalidUsageException | OperationFailureException e) {
+            e.printStackTrace();
+            Log.e(TAG, "Untraceable operation failed: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Converts hex string to byte array.
+     * @param s Hex string (e.g., "FFFFFFFF")
+     * @return Byte array
+     */
+    private byte[] hexStringToByteArray(String s) {
+        if (s == null || s.isEmpty()) {
+            throw new IllegalArgumentException("Hex string is empty");
+        }
+        if ((s.length() % 2) != 0) {
+            throw new IllegalArgumentException("Hex string must have even length");
+        }
+        int len = s.length();
+        byte[] data = new byte[len / 2];
+        for (int i = 0; i < len; i += 2) {
+            int high = Character.digit(s.charAt(i), 16);
+            int low = Character.digit(s.charAt(i + 1), 16);
+            if (high < 0 || low < 0) {
+                throw new IllegalArgumentException("Hex string contains invalid characters");
+            }
+            data[i / 2] = (byte) ((high << 4) + low);
+        }
+        return data;
+    }
+
+    /**
+     * Parses memory bank string to MEMORY_BANK enum.
+     */
+    private MEMORY_BANK parseMemoryBank(String bank) {
+        switch (bank) {
+            case "MEMORY_BANK_EPC":
+                return MEMORY_BANK.MEMORY_BANK_EPC;
+            case "MEMORY_BANK_TID":
+                return MEMORY_BANK.MEMORY_BANK_TID;
+            case "MEMORY_BANK_USER":
+                return MEMORY_BANK.MEMORY_BANK_USER;
+            case "MEMORY_BANK_RESERVED":
+                return MEMORY_BANK.MEMORY_BANK_RESERVED;
+            default:
+                return MEMORY_BANK.MEMORY_BANK_EPC;
+        }
+    }
+
+    /**
+     * Parses TID option string to UNTRACEABLE_TID enum.
+     */
+    private UNTRACEABLE_TID parseTidOption(String option) {
+        switch (option) {
+            case "SHOW_TID":
+                return UNTRACEABLE_TID.SHOW_TID;
+            case "SHOW_USER":
+                return UNTRACEABLE_TID.SHOW_TID; // SHOW_USER uses SHOW_TID with setShowUser(true)
+            case "HIDE_ALL_TID":
+            default:
+                return UNTRACEABLE_TID.HIDE_ALL_TID;
         }
     }
 
@@ -485,48 +600,82 @@ class RFIDHandler implements Readers.RFIDReaderEventHandler {
         }
     }
 
+    private void updateReaderStatus(String status) {
+        if (context != null && textView != null) {
+            context.runOnUiThread(() -> textView.setText(status));
+        }
+    }
+
+    private boolean isSuccessfulGen2v2Status(GEN2V2_OPERATION_STATUS status) {
+        return status == GEN2V2_OPERATION_STATUS.ACCESS_SUCCESS
+                || status == GEN2V2_OPERATION_STATUS.ACCESS_SUCCESS_STORED_WITHOUT_LENGTH
+                || status == GEN2V2_OPERATION_STATUS.ACCESS_SUCCESS_STORED_WITH_LENGTH
+                || status == GEN2V2_OPERATION_STATUS.ACCESS_SUCCESS_SEND_WITHOUT_LENGTH
+                || status == GEN2V2_OPERATION_STATUS.ACCESS_SUCCESS_SEND_WITH_LENGTH;
+    }
+
     // Read/Status Notify handler
     // Implement the RfidEventsLister class to receive event notifications
     public class EventHandler implements RfidEventsListener {
         // Read Event Notification
         public void eventReadNotify(RfidReadEvents e) {
-            // Recommended to use new method getReadTagsEx for better performance in case of large tag population
+            // Recommended to use getReadTagsEx for better performance with large tag populations.
             TagData[] myTags = reader.Actions.getReadTags(100);
-            if (myTags != null) {
-                for (int index = 0; index < myTags.length; index++) {
-                    Log.d(TAG, "1. Tag ID = " + myTags[index].getTagID());
-                    Log.d(TAG, "2. ACCESS code = " + myTags[index].getOpCode());
-                    if (myTags[index].getOpCode() == ACCESS_OPERATION_CODE.ACCESS_OPERATION_READ &&
-                            myTags[index].getOpStatus() == ACCESS_OPERATION_STATUS.ACCESS_SUCCESS) {
-                        if (myTags[index].getMemoryBankData().length() > 0) {
-                            Log.d(TAG, "3. Mem Bank = " + myTags[index].getMemoryBank());
-                            Log.d(TAG, "4. Mem Bank Data " + myTags[index].getMemoryBankData());
-                        }
+            if (myTags == null) {
+                return;
+            }
+
+            //DEBUG: Log tag data and access operation results
+            for (TagData tag : myTags) {
+                Log.d(TAG, "1. Tag ID = " + tag.getTagID());
+                Log.d(TAG, "2. ACCESS code = " + tag.getOpCode());
+
+                if (tag.getOpCode() == ACCESS_OPERATION_CODE.ACCESS_OPERATION_READ
+                        && tag.getOpStatus() == ACCESS_OPERATION_STATUS.ACCESS_SUCCESS
+                        && tag.getMemoryBankData() != null
+                        && tag.getMemoryBankData().length() > 0) {
+                    Log.d(TAG, "3. Mem Bank = " + tag.getMemoryBank());
+                    Log.d(TAG, "4. Mem Bank Data " + tag.getMemoryBankData());
+                }
+
+                if (tag.getG2v2OpCode() == GEN2V2_OPERATION_CODE.G2V2_OPERATION_UNTRACEABLE) {
+                    GEN2V2_OPERATION_STATUS g2v2Status = tag.getG2v2OpStatus();
+                    String g2v2Response = tag.getG2v2Response();
+
+                    Log.d(TAG, "5. Untraceable response: EPC=" + tag.getTagID()
+                            + " ,G2V2 response=" + g2v2Response
+                            + " ,G2V2 opCode=" + tag.getG2v2OpCode()
+                            + " ,status=" + g2v2Status
+                            + " ,opCode=" + tag.getOpCode());
+                    Log.d(TAG, "Untraceable EPC=" + tag.getTagID());
+                    if (g2v2Response != null) {
+                        Log.d(TAG, "Untraceable Response Length=" + g2v2Response.length());
                     }
-                    //////////////////////////////////////////////////////////////
-                    // untraceable
-                    {
-                        if (myTags[index].getG2v2Response() != null) {
-                            Log.d(TAG, "5. Untraceable response: EPC=" + myTags[index].getTagID() +
-                                    " ,G2V2 response=" + myTags[index].getG2v2Response() +
-                                    " ,op=" + myTags[index].getG2v2OpCode() +
-                                    " ,status=" + myTags[index].getG2v2OpStatus() +
-                                    " ,opCode=" + myTags[index].getOpCode());
-                            Log.d(TAG, "Untraceable Mem Bank Data " + myTags[index].getMemoryBankData());
-                            Log.d(TAG, "Untraceable EPC=" + myTags[index].getTagID());
-                        }
-                    }
-                    //////////////////////////////////////////////////////////////
-                    // Tag Location
-                    if (myTags[index].isContainsLocationInfo()) {
-                        short dist = myTags[index].LocationInfo.getRelativeDistance();
-                        Log.d(TAG, "Tag relative distance " + dist);
+
+                    if (isSuccessfulGen2v2Status(g2v2Status)) {
+                        Log.d(TAG, "G2V2 untraceable success for Tag=" + tag.getTagID()
+                                + " status=" + g2v2Status);
+                        updateReaderStatus("Untraceable success: " + tag.getTagID());
+                        stopInventory();
+                    } else if (g2v2Status != null) {
+                        Log.d(TAG, "G2V2 untraceable non-success status=" + g2v2Status
+                                + " for Tag=" + tag.getTagID());
+                        updateReaderStatus("Untraceable failed: " + g2v2Status);
+                    } else {
+                        Log.d(TAG, "G2V2 untraceable status unavailable for Tag=" + tag.getTagID());
+                        updateReaderStatus("Untraceable status unavailable");
                     }
                 }
-                // possibly if operation was invoked from async task and still busy
-                // handle tag data responses on parallel thread thus THREAD_POOL_EXECUTOR
-                new AsyncDataUpdate().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, myTags);
+
+                if (tag.isContainsLocationInfo()) {
+                    short dist = tag.LocationInfo.getRelativeDistance();
+                    Log.d(TAG, "Tag relative distance " + dist);
+                }
             }
+            //End of debug logs
+
+            // Handle tag data responses on parallel thread via THREAD_POOL_EXECUTOR.
+            new AsyncDataUpdate().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, myTags);
         }
 
         // Status Event Notification
